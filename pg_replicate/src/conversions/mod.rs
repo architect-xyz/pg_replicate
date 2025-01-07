@@ -36,11 +36,27 @@ pub enum Cell {
     Array(ArrayCell),
 }
 
+#[cfg(feature = "rust_decimal")]
+impl TryFrom<Cell> for rust_decimal::Decimal {
+    type Error = &'static str;
+
+    fn try_from(cell: Cell) -> Result<Self, Self::Error> {
+        match cell {
+            Cell::Numeric(PgNumeric::Value(decimal)) => Ok(decimal),
+            Cell::Numeric(PgNumeric::NaN) => Err("NaN cannot be converted to rust_decimal::Decimal"),
+            Cell::Numeric(PgNumeric::PositiveInf) => Err("Infinity cannot be converted to rust_decimal::Decimal"),
+            Cell::Numeric(PgNumeric::NegativeInf) => Err("NegInfinity cannot be converted to rust_decimal::Decimal"),
+            _ => Err("only Numeric can be converted to rust_decimal::Decimal"),
+        }
+    }
+}
+
 #[trait_gen(T -> 
     bool, String, i16, i32, u32, i64, f32, f64, PgNumeric, 
     NaiveDate, NaiveTime, NaiveDateTime, DateTime<Utc>,
     Uuid, serde_json::Value, Vec<u8>
 )]
+#[cfg_attr(feature = "rust_decimal", trait_gen(T -> rust_decimal::Decimal))]
 impl TryFrom<Cell> for Option<T> {
     type Error = TryIntoError<Cell>;
 
@@ -57,6 +73,7 @@ impl TryFrom<Cell> for Option<T> {
     NaiveDate, NaiveTime, NaiveDateTime, DateTime<Utc>,
     Uuid, serde_json::Value, Vec<u8>
 )]
+#[cfg_attr(feature = "rust_decimal", trait_gen(T -> rust_decimal::Decimal))]
 impl TryFrom<Cell> for Vec<Option<T>> {
     type Error = &'static str; 
 
