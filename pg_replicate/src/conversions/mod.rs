@@ -51,12 +51,24 @@ impl TryFrom<Cell> for rust_decimal::Decimal {
     }
 }
 
+// TODO: why can't cfg(attr(..), trait_gen(..)) work?
+#[cfg(feature = "rust_decimal")]
+impl TryFrom<Cell> for Option<rust_decimal::Decimal> {
+    type Error = &'static str;
+
+    fn try_from(cell: Cell) -> Result<Self, Self::Error> {
+        match cell {
+            Cell::Null => Ok(None),
+            _ => TryInto::<rust_decimal::Decimal>::try_into(cell).map(Some)
+        }
+    }
+}
+
 #[trait_gen(T -> 
     bool, String, i16, i32, u32, i64, f32, f64, PgNumeric, 
     NaiveDate, NaiveTime, NaiveDateTime, DateTime<Utc>,
     Uuid, serde_json::Value, Vec<u8>
 )]
-#[cfg_attr(feature = "rust_decimal", trait_gen(T -> rust_decimal::Decimal))]
 impl TryFrom<Cell> for Option<T> {
     type Error = TryIntoError<Cell>;
 
