@@ -23,12 +23,13 @@ required-features = ["delta"]
 
 [dependencies]
 async-trait = { workspace = true }
-bigdecimal = { workspace = true, features = ["std"] }
+bigdecimal = { workspace = true, features = ["std"], optional = true }
 bytes = { workspace = true }
 byteorder = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 duckdb = { workspace = true, optional = true }
-deltalake = { workspace = true,features=["datafusion"],optional=true }
+derive_more = { workspace = true, features = ["try_into"] }
+deltalake = { workspace = true, features = ["datafusion"], optional = true }
 futures = { workspace = true }
 gcp-bigquery-client = { workspace = true, optional = true, features = [
     "rust-tls",
@@ -39,6 +40,7 @@ pin-project-lite = { workspace = true }
 postgres-protocol = { workspace = true }
 postgres-replication = { workspace = true }
 prost = { workspace = true, optional = true }
+rust_decimal = { workspace = true, optional = true }
 rustls = { workspace = true, features = ["aws-lc-rs", "logging"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["std"] }
@@ -51,6 +53,7 @@ tokio-postgres = { workspace = true, features = [
     "with-serde_json-1",
 ] }
 tracing = { workspace = true, default-features = true }
+trait-gen = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
