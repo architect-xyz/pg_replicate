@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-use derive_more::TryInto;
+use derive_more::{TryInto, TryIntoError};
 use numeric::PgNumeric;
 use trait_gen::trait_gen;
 use uuid::Uuid;
@@ -35,22 +35,18 @@ pub enum Cell {
     Array(ArrayCell),
 }
 
-#[derive(Debug, thiserror::Error)]
-#[error("cell conversion error: {0}")]
-pub struct CellConversionError(String);
-
 #[trait_gen(T -> 
     bool, String, i16, i32, u32, i64, f32, f64, PgNumeric, 
     NaiveDate, NaiveTime, NaiveDateTime, DateTime<Utc>,
     Uuid, serde_json::Value, Vec<u8>
 )]
 impl TryFrom<Cell> for Option<T> {
-    type Error = CellConversionError;
+    type Error = TryIntoError<Cell>;
 
     fn try_from(cell: Cell) -> Result<Self, Self::Error> {
         match cell {
             Cell::Null => Ok(None),
-            _ => T::try_from(cell).map(Some).map_err(|e| CellConversionError(format!("{e:?}"))) 
+            _ => T::try_from(cell).map(Some)
         }
     }
 }
@@ -61,17 +57,15 @@ impl TryFrom<Cell> for Option<T> {
     Uuid, serde_json::Value, Vec<u8>
 )]
 impl TryFrom<Cell> for Vec<Option<T>> {
-    type Error = CellConversionError; 
+    type Error = &'static str; 
 
     fn try_from(cell: Cell) -> Result<Self, Self::Error> {
         match cell {
             Cell::Array(array_cell) => {
                 TryInto::<Vec<Option<T>>>::try_into(array_cell)
-                    .map_err(|e| CellConversionError(format!("{e:?}")))
+                    .map_err(|_| "type conversion failed")
             }
-            _ => Err(CellConversionError(
-                "Only ArrayCell can be converted to Vec<Option<T>>".to_string(),
-            )),
+            _ => Err("Only ArrayCell can be converted to Vec<Option<${T}>>"),
         }
     }
 }
@@ -82,7 +76,7 @@ impl TryFrom<Cell> for Vec<Option<T>> {
     Uuid, serde_json::Value, Vec<u8>
 )]
 impl TryFrom<Cell> for Option<Vec<Option<T>>> {
-    type Error = CellConversionError;
+    type Error = &'static str;
 
     fn try_from(cell: Cell) -> Result<Self, Self::Error> {
         match cell {
@@ -91,11 +85,9 @@ impl TryFrom<Cell> for Option<Vec<Option<T>>> {
             Cell::Array(array_cell) => {
                 TryInto::<Vec<Option<T>>>::try_into(array_cell)
                     .map(Some)
-                    .map_err(|e| CellConversionError(format!("{e:?}")))
+                    .map_err(|_| "type conversion failed")
             }
-            _ => Err(CellConversionError(
-                "Only ArrayCell can be converted to Option<Vec<Option<T>>>".to_string(),
-            )),
+            _ => Err("Only ArrayCell can be converted to Option<Vec<Option<${T}>>>"),
         }
     }
 }
