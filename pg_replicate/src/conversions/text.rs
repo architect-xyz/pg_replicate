@@ -1,6 +1,11 @@
 use core::str;
 use std::num::{ParseFloatError, ParseIntError};
 
+#[cfg(feature = "rust_decimal")]
+use crate::conversions::numeric::ParseDecimalError;
+#[cfg(not(any(feature = "bigdecimal", feature = "rust_decimal")))]
+use crate::conversions::numeric::ParseNumericInfallible;
+#[cfg(feature = "bigdecimal")]
 use bigdecimal::ParseBigDecimalError;
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use thiserror::Error;
@@ -22,8 +27,17 @@ pub enum FromTextError {
     #[error("invalid float value")]
     InvalidFloat(#[from] ParseFloatError),
 
+    #[cfg(feature = "bigdecimal")]
     #[error("invalid numeric: {0}")]
     InvalidNumeric(#[from] ParseBigDecimalError),
+
+    #[cfg(feature = "rust_decimal")]
+    #[error("invalid numeric: {0}")]
+    InvalidDecimal(#[from] ParseDecimalError),
+
+    #[cfg(not(any(feature = "bigdecimal", feature = "rust_decimal")))]
+    #[error("invalid numeric")]
+    InvalidNumeric(#[from] ParseNumericInfallible),
 
     #[error("invalid bytea: {0}")]
     InvalidBytea(#[from] ByteaHexParseError),
