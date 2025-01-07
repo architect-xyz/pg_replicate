@@ -15,6 +15,7 @@ pub mod text;
 
 #[derive(Debug, Clone, TryInto)]
 pub enum Cell {
+    #[try_into(ignore)]
     Null,
     Bool(bool),
     String(String),
@@ -94,6 +95,7 @@ impl TryFrom<Cell> for Option<Vec<Option<T>>> {
 
 #[derive(Debug, Clone, TryInto)]
 pub enum ArrayCell {
+    #[try_into(ignore)]
     Null,
     Bool(Vec<Option<bool>>),
     String(Vec<Option<String>>),
