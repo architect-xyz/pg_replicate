@@ -1,7 +1,9 @@
 use std::fmt::Debug;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use derive_more::TryInto;
 use numeric::PgNumeric;
+use trait_gen::trait_gen;
 use uuid::Uuid;
 
 pub mod bool;
@@ -11,7 +13,7 @@ pub mod numeric;
 pub mod table_row;
 pub mod text;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, TryInto)]
 pub enum Cell {
     Null,
     Bool(bool),
@@ -33,7 +35,64 @@ pub enum Cell {
     Array(ArrayCell),
 }
 
-#[derive(Debug, Clone)]
+#[trait_gen(T -> 
+    bool, String, i16, i32, u32, i64, f32, f64, PgNumeric, 
+    NaiveDate, NaiveTime, NaiveDateTime, DateTime<Utc>,
+    Uuid, serde_json::Value, Vec<u8>
+)]
+impl TryFrom<Cell> for Option<T> {
+    type Error = &'static str;
+
+    fn try_from(cell: Cell) -> Result<Self, Self::Error> {
+        match cell {
+            Cell::Null => Ok(None),
+            _ => T::try_from(cell).map(Some).map_err(|_| "type conversion failed"),
+        }
+    }
+}
+
+#[trait_gen(T -> 
+    bool, String, i16, i32, u32, i64, f32, f64, PgNumeric, 
+    NaiveDate, NaiveTime, NaiveDateTime, DateTime<Utc>,
+    Uuid, serde_json::Value, Vec<u8>
+)]
+impl TryFrom<Cell> for Vec<Option<T>> {
+    type Error = &'static str;
+
+    fn try_from(cell: Cell) -> Result<Self, Self::Error> {
+        match cell {
+            Cell::Array(array_cell) => {
+                TryInto::<Vec<Option<T>>>::try_into(array_cell)
+                    .map_err(|_| "type conversion failed")
+            }
+            _ => Err("Only ArrayCell can be converted to Vec<Option<T>>"),
+        }
+    }
+}
+
+#[trait_gen(T -> 
+    bool, String, i16, i32, u32, i64, f32, f64, PgNumeric, 
+    NaiveDate, NaiveTime, NaiveDateTime, DateTime<Utc>,
+    Uuid, serde_json::Value, Vec<u8>
+)]
+impl TryFrom<Cell> for Option<Vec<Option<T>>> {
+    type Error = &'static str;
+
+    fn try_from(cell: Cell) -> Result<Self, Self::Error> {
+        match cell {
+            Cell::Null => Ok(None),
+            Cell::Array(ArrayCell::Null) => Ok(None),
+            Cell::Array(array_cell) => {
+                TryInto::<Vec<Option<T>>>::try_into(array_cell)
+                    .map(Some)
+                    .map_err(|_| "type conversion failed")
+            }
+            _ => Err("Only ArrayCell can be converted to Option<Vec<Option<T>>>"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, TryInto)]
 pub enum ArrayCell {
     Null,
     Bool(Vec<Option<bool>>),

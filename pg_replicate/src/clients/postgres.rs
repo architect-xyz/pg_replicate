@@ -71,6 +71,11 @@ impl ReplicationClient {
             .port(port)
             .dbname(database)
             .user(username)
+            // CR alee: thread this thru config
+            .keepalives(true)
+            .keepalives_idle(std::time::Duration::from_secs(30))
+            .keepalives_interval(std::time::Duration::from_secs(30))
+            .keepalives_retries(3)
             .replication_mode(ReplicationMode::Logical);
 
         if let Some(password) = password {
